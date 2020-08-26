@@ -3,17 +3,12 @@ import hashlib
 from time import time
 from urllib.parse import urlparse
 import requests
+from block import Block
 
 
 class Blockchain(object):
     def __init__(self):
-        self.chain = [{
-            'index': 0,
-            'timestamp': time(),
-            'transations': [],
-            'proof': "0",
-            'previous_hash': hashlib.sha256(str(time()).encode()).hexdigest()
-        }]
+        self.chain = [Block(0, time(), [], "0", hashlib.sha256(str(time()).encode()).hexdigest())]
         self.current_transactions = []
         self.nodes = set()
 
@@ -25,13 +20,13 @@ class Blockchain(object):
         :return: New Block
         """
 
-        block = {
-            'index': len(self.chain) + 1,
-            'timestamp': time(),
-            'transactions': self.current_transactions,
-            'proof': proof,
-            'previous_hash': previous_hash or self.hash(self.chain[-1])
-        }
+        block = Block(
+            len(self.chain) + 1,
+            time(),
+            self.current_transactions,
+            proof,
+            previous_hash or self.hash(self.chain[-1])
+        )
 
         self.current_transactions = []
         self.chain.append(block)
@@ -47,10 +42,10 @@ class Blockchain(object):
         """
         previous_hash = self.hash(self.last_block)
 
-        if previous_hash != block["previous_hash"]:
+        if previous_hash != block.previous_hash:
             return False
 
-        previous_proof = self.last_block["proof"]
+        previous_proof = self.last_block.proof
         if not self.valid_proof(previous_proof, proof):
             return False
 
@@ -71,7 +66,7 @@ class Blockchain(object):
             'recipient': recipient,
             'amount': amount,
         })
-        return self.last_block["index"] + 1
+        return self.last_block.index+ 1
 
     @property
     def last_block(self):
@@ -142,11 +137,11 @@ class Blockchain(object):
             print(f'{last_block}')
             print(f'{block}')
             print("\n-----------\n")
-            if block['previous_hash'] != self.hash(last_block):
+            if block.previous_hash != self.hash(last_block):
                 return False
 
             # Check that the Proof of Work is correct
-            if not self.valid_proof(last_block['proof'], block['proof']):
+            if not self.valid_proof(last_block.proof, block.proof):
                 return False
 
             last_block = block

@@ -1,6 +1,7 @@
 from uuid import uuid4
 from flask import Flask, jsonify, request
 
+from block import Block
 from blockchain import Blockchain
 
 app = Flask(__name__)
@@ -14,7 +15,7 @@ blockchain = Blockchain()
 def mine():
     # We run the proof of work algorithm to get the next proof...
     last_block = blockchain.last_block
-    last_proof = last_block['proof']
+    last_proof = last_block.proof
     proof = blockchain.proof_of_work(last_proof)
 
     # We must receive a reward for finding the proof.
@@ -38,10 +39,10 @@ def mine():
 
     response = {
         'message': "New Block Forged",
-        'index': block['index'],
-        'transactions': block['transactions'],
-        'proof': block['proof'],
-        'previous_hash': block['previous_hash'],
+        'index': block.index,
+        'transactions': block.transactions,
+        'proof': block.proof,
+        'previous_hash': block.previous_hash,
     }
     return jsonify(response), 200
 
@@ -49,16 +50,15 @@ def mine():
 @app.route('/add_block', methods=['POST'])
 def verify_and_add_block():
     block_data = request.get_json()
-    block = \
-        {
-            'index': block_data["index"],
-            'timestamp': block_data["timestamp"],
-            'transactions': block_data["transactions"],
-            'proof': block_data["proof"],
-            'previous_hash': block_data["previous_hash"]
-        }
+    block = Block(
+        block_data["index"],
+        block_data["timestamp"],
+        block_data["transactions"],
+        block_data["proof"],
+        block_data["previous_hash"]
+    )
 
-    added = blockchain.add_block(block, block["proof"])
+    added = blockchain.add_block(block, block.proof)
 
     if not added:
         return "The block was discarded by the node", 400
